@@ -1,0 +1,33 @@
+{
+    "name":        "wakeapp/rabbit-queue-bundle",
+    "description": "Provides possibility for working with rabbitMQ queue by consumers system",
+    "type":        "symfony-bundle",
+    "keywords":    ["symfony-bundle", "queue", "rabbitmq", "consumer"],
+    "license":     "proprietary",
+
+    "require": {
+        "php":                              "~7.4 || ^8.0",
+        "ext-pcntl":                        "*",
+        "symfony/config":                   "~4.0||~5.0",
+        "symfony/console":                  "~4.0||~5.0",
+        "symfony/dependency-injection":     "~4.0||~5.0",
+        "symfony/http-kernel":              "~4.0||~5.0",
+        "php-amqplib/php-amqplib":          "^2.12"
+    },
+
+    "require-dev": {
+        "psr/log":                          "~1.0",
+        "phpunit/phpunit":                  "^6.5 || ^7.0 || ^8.0 || ^9.0"
+    },
+
+    "suggest": {
+        "symfony/monolog-bundle":   "Provides advanced logging mechanism",
+        "symfony/symfony":          "Allows more advanced functionality with Symfony"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "Wakeapp\\Bundle\\RabbitQueueBundle\\": ""
+        }
+    }
+}

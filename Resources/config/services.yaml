@@ -1,0 +1,57 @@
+services:
+    PhpAmqpLib\Connection\AMQPStreamConnection:
+        arguments:
+            - '%wakeapp_rabbit_queue.connection.host%'
+            - '%wakeapp_rabbit_queue.connection.port%'
+            - '%wakeapp_rabbit_queue.connection.username%'
+            - '%wakeapp_rabbit_queue.connection.password%'
+            - '%wakeapp_rabbit_queue.connection.vhost%'
+
+    Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry:
+        arguments:
+            - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Consumer\ConsumerInterface::TAG, default_index_method: 'getName' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry:
+        arguments:
+            - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface::TAG, default_index_method: 'getQueueName' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry:
+        arguments:
+            - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Hydrator\HydratorInterface::TAG, default_index_method: 'getKey' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Hydrator\JsonHydrator:
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Hydrator\HydratorInterface::TAG, default_index_method: 'getKey' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Hydrator\PlainTextHydrator:
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Hydrator\HydratorInterface::TAG, default_index_method: 'getKey' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer:
+        arguments:
+            - '@PhpAmqpLib\Connection\AMQPStreamConnection'
+            - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry'
+            - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry'
+            - '%wakeapp_rabbit_queue.hydrator_name%'
+
+    Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducerInterface: '@Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer'
+
+    Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerListCommand:
+        calls:
+            - [ 'dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry'] ]
+        tags: [ 'console.command' ]
+
+    Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerRunCommand:
+        calls:
+            - ['dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry', '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient', '@?logger' ]]
+        tags: [ 'console.command' ]
+
+    Wakeapp\Bundle\RabbitQueueBundle\Command\UpdateDefinitionCommand:
+        calls:
+            - [ 'dependencyInjection', [ '@PhpAmqpLib\Connection\AMQPStreamConnection' ] ]
+            - [ 'setDefinitionList', [ !tagged_iterator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface::TAG, default_index_method: 'getQueueName' } ] ]
+        tags: [ 'console.command' ]
+
+    Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient:
+        arguments:
+            - '@PhpAmqpLib\Connection\AMQPStreamConnection'
