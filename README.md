@@ -4,14 +4,33 @@ Rabbit Queue Bundle
 Введение
 --------
 
-Бандл предоставляет реализацию по работе с очередями посредством механизма `consumer`'ов на основе `RabbitMQ`.
+Бандл предоставляет инструменты по работе с очередями `RabbitMQ` посредством механизма `producer` - `consumer`.
+
+Содержание
+--------
+
+1. [Установка](#установка)
+    - [Загрузка бандла](#шаг-1-загрузка-бандла)
+    - [Подключение бандла](#шаг-2-подключение-бандла)
+2. [Конфигурация](#конфигурация)
+3. [Описание компонентов](#описание-компонентов)
+    - [Producer](#producer)
+    - [Consumer](#consumer)
+    - [Definition](#definition)
+4. [Доступные команды](#доступные-команды)
+5. [Использование](#использование)
+    - [Шаг 1: Создание схемы очереди (Definition)](#шаг-1-создание-схемы-очереди-definition)
+    - [Шаг 2: Создание consumer'а](#шаг-2-создание-consumerа)
+    - [Шаг 3: Загрузка схем очередей RabbitMQ](#шаг-3-загрузка-схем-очередей-rabbitmq)
+    - [Шаг 4: Запуск consumer'а](#шаг-4-запуск-consumerа)
+6. [Лицензия](#лицензия)
 
 Установка
 ---------
 
 ### Шаг 1: Загрузка бандла
 
-Откройте консоль и, перейдя в директорию проекта, выполните следующую команду для загрузки наиболее подходящей
+В директории проекта, выполните следующую команду для загрузки наиболее подходящей
 стабильной версии этого бандла:
 ```bash
     composer require wakeapp/rabbit-queue-bundle
@@ -67,7 +86,7 @@ wakeapp_rabbit_queue:
 ### Producer
 `Producer` - используется для отправки сообщений в очередь. 
 
-Для этих целей в бандле реализован [RabbitMqProducer](../Producer/RabbitMqProducer.php), 
+Для этих целей в бандле реализован [RabbitMqProducer](Producer/RabbitMqProducer.php), 
 с помощью которого можно отправлять сообщения в очередь с заданными параметрами.
 ```php
 <?php
@@ -81,22 +100,50 @@ $producer->put('queue_name', $data);
 `Consumer` - Используется для получения и обработки сообщений из очереди.
 
 Для реализации логики обработки сообщений необходимо создать класс `consumer`, 
-реализующий [ConsumerInterface](../Consumer/ConsumerInterface.php), 
-либо наследующий [AbstractConsumer](../Consumer/AbstractConsumer.php), который содержит предустановленные значения для некоторых методов.
+реализующий [ConsumerInterface](Consumer/ConsumerInterface.php), 
+либо наследующий [AbstractConsumer](Consumer/AbstractConsumer.php), который содержит предустановленные значения для некоторых методов.
 
 ### Definition
 RabbitMQ позволяет создавать сложные схемы очередей, состоящие из несколько взаимосвязанных `exchange` и `queue`.
 
 Для удобства работы со схемами бандл предоставляет возможность сохранения схем очередей в специальные классы `Definition`, 
-которые реализуют [DefinitionInterface](../Definition/DefinitionInterface.php).
+которые реализуют [DefinitionInterface](Definition/DefinitionInterface.php).
 
+Доступные команды
+-------------
+1. `rabbit:consumer:run` - запускает выбранный консьюмер.
+```bash
+php bin/console rabbit:consumer:run <name> # <name> - название консьюмера.
+```
+
+2. `rabbit:definition:update` - загружает все схемы очередей `RabbitMQ` в соответствии с существующими классами `Definition`.
+
+*Примечание: Данная команда не обновляет существующие схемы.*
+```bash
+php bin/console rabbit:definition:update
+```
+
+3. `rabbit:consumer:list` - выводит список консьюмеров, зарегистрированных в проекте.
+```bash
+php bin/console rabbit:consumer:list
+```
+Пример вывода команды:
+```text
+ Total consumers count: 2
++--------------------+------------+
+| Queue Name         | Batch Size |
++--------------------+------------+
+| example_first      | 1          |
+| example_second     | 100        |
++--------------------+------------+
+```
 
 Использование
 -------------
 
 ### Шаг 1: Создание схемы очереди (Definition)
 Для инициализации схемы, требуется создать класс Definition, 
-который реализует [DefinitionInterface](../Definition/DefinitionInterface.php).
+который реализует [DefinitionInterface](Definition/DefinitionInterface.php).
 В методе `init` нужно объявить структуру очереди состоящию из необходимых `exchanges`, `queue` и `bindings` 
 с помощью стандартных методов работы с каналом [php-amqplib](https://github.com/php-amqplib/php-amqplib). 
 
@@ -161,7 +208,7 @@ class ExampleFifoDefinition implements DefinitionInterface
 
 ### Шаг 2: Создание consumer'а
 
-Далее необходимо создать класс-`consumer`, наследующий [AbstractConsumer](../Consumer/AbstractConsumer.php).
+Далее необходимо создать класс-`consumer`, наследующий [AbstractConsumer](Consumer/AbstractConsumer.php).
 А в методе `process` реализовать обработку полученных сообщений.
 
 ```php
@@ -217,7 +264,7 @@ services:
 ### Шаг 3: Загрузка схем очередей RabbitMQ
 
 Чтобы загрузить схемы `definition` в RabbitMQ необходимо выполнить команду `rabbit:definition:update`. 
-Данная команда обновит схему в соответствии с существующими классами `Definition`, реализующими [DefinitionInterface](../Definition/DefinitionInterface.php).
+Данная команда обновит схему в соответствии с существующими классами `Definition`, реализующими [DefinitionInterface](Definition/DefinitionInterface.php).
 
 ```bash
 php bin/console rabbit:definition:update
@@ -225,27 +272,17 @@ php bin/console rabbit:definition:update
 
 ### Шаг 4: Запуск consumer'а
 
-Чтобы запустить `consumer` необходимо выполнить команду `wakeapp:consumer:run`. 
+Чтобы запустить `consumer` необходимо выполнить команду `rabbit:consumer:run`rabbit. 
 Для запуска нужно передать имя конкретного `consumer`. 
 
 Запуск ранее описанного `consumer`'а будет выглядеть так:
 
 ```bash
-php bin/console wakeapp:consumer:run example
+php bin/console rabbit:consumer:run example
 ```
 
 Для просмотра списка всех зарегистрированных `consumer`'ов достаточно выполнить команду `rabbit:consumer:list`.
 
-```text
- Total consumers count: 3
-+--------------------+------------+
-| Queue Name         | Batch Size |
-+--------------------+------------+
-| prepend_event_push | 1          |
-| send_event_push    | 100        |
-| send_regular_push  | 100        |
-+--------------------+------------+
-```
 Лицензия
 --------
 
