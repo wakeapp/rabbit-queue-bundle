@@ -90,10 +90,11 @@ wakeapp_rabbit_queue:
 с помощью которого можно отправлять сообщения в очередь с заданными параметрами.
 ```php
 <?php
-$data = ['message' => 'example'];
+$data = ['message' => 'example']; # сообщение
+$options = ['key' => 'unique_key', 'delay' => 1000]; # Опции, в зависимости от типа очереди
 
 /** @var \Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer $producer*/
-$producer->put('queue_name', $data);
+$producer->put('queue_name', $data, $options);
 ```
 
 ### Consumer
@@ -103,49 +104,53 @@ $producer->put('queue_name', $data);
 реализующий [ConsumerInterface](Consumer/ConsumerInterface.php), 
 либо наследующий [AbstractConsumer](Consumer/AbstractConsumer.php), который содержит предустановленные значения для некоторых методов.
 
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Acme\AppBundle\Consumer;
+
+use Wakeapp\Bundle\RabbitQueueBundle\Consumer\AbstractConsumer;
+
+class ExampleConsumer extends AbstractConsumer
+{
+    public const DEFAULT_BATCH_SIZE = 100; #размер пачки
+    /**
+     * {@inheritDoc}
+     */
+    public function process(array $messageList): void
+    {
+        foreach ($messageList as $item) {
+            // handle some task by specific logic
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getBindQueueName(): string
+    {
+        return 'example';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getName(): string
+    {
+        return 'example';
+    }
+}
+```
+В методе `process()` необходимо реализовать обработку полученных сообщений. 
+Сообщения поступают пачками, размер которых задается константой `DEFAULT_BATCH_SIZE` (по умолчанию = 1)
+
 ### Definition
 RabbitMQ позволяет создавать сложные схемы очередей, состоящие из несколько взаимосвязанных `exchange` и `queue`.
 
 Для удобства работы со схемами бандл предоставляет возможность сохранения схем очередей в специальные классы `Definition`, 
 которые реализуют [DefinitionInterface](Definition/DefinitionInterface.php).
-
-Доступные команды
--------------
-1. `rabbit:consumer:run` - запускает выбранный консьюмер.
-```bash
-php bin/console rabbit:consumer:run <name> # <name> - название консьюмера.
-```
-
-2. `rabbit:definition:update` - загружает все схемы очередей `RabbitMQ` в соответствии с существующими классами `Definition`.
-
-*Примечание: Данная команда не обновляет существующие схемы.*
-```bash
-php bin/console rabbit:definition:update
-```
-
-3. `rabbit:consumer:list` - выводит список консьюмеров, зарегистрированных в проекте.
-```bash
-php bin/console rabbit:consumer:list
-```
-Пример вывода команды:
-```text
- Total consumers count: 2
-+--------------------+------------+
-| Queue Name         | Batch Size |
-+--------------------+------------+
-| example_first      | 1          |
-| example_second     | 100        |
-+--------------------+------------+
-```
-
-Использование
--------------
-
-### Шаг 1: Создание схемы очереди (Definition)
-Для инициализации схемы, требуется создать класс Definition, 
-который реализует [DefinitionInterface](Definition/DefinitionInterface.php).
-В методе `init` нужно объявить структуру очереди состоящию из необходимых `exchanges`, `queue` и `bindings` 
-с помощью стандартных методов работы с каналом [php-amqplib](https://github.com/php-amqplib/php-amqplib). 
 
 ```php
 <?php
@@ -206,59 +211,78 @@ class ExampleFifoDefinition implements DefinitionInterface
 }
 ```
 
+В методе `init()` объявляется структура очереди состоящая из необходимых `exchanges`, `queue` и `bindings` 
+с помощью стандартных методов [php-amqplib](https://github.com/php-amqplib/php-amqplib). 
+
+Метод `getEntryPointName()` - отвечает за точку входа сообщений. Точкой входа может быть название `exchange` или `queue` в зависимости от структуры схемы.
+
+Метод `getQueueName()` - название очереди, куда в конечном итоге попадут сообщения.
+
+Жизненный цикл сообщения:
+```text
+Сообщение -> Producer -> EntryPoint -> Структура очереди exchanges, bindings -> Queue -> Consumer
+```
+
+Таким образом `producer` отправляет сообщения на точку входа, а `consumer` забирает сообщения из очереди. 
+
+В простейшем случае при использовании обычной очереди FIFO, точкой входа будет являться название очереди.
+
+Доступные команды
+-------------
+1. `rabbit:consumer:run` - запускает выбранный консьюмер.
+```bash
+php bin/console rabbit:consumer:run <name> # <name> - название консьюмера.
+```
+
+2. `rabbit:definition:update` - загружает все схемы очередей `RabbitMQ` в соответствии с существующими классами `Definition`.
+
+*Примечание: Данная команда не обновляет существующие схемы.*
+```bash
+php bin/console rabbit:definition:update
+```
+
+3. `rabbit:consumer:list` - выводит список консьюмеров, зарегистрированных в проекте.
+```bash
+php bin/console rabbit:consumer:list
+```
+Пример вывода команды:
+```text
+ Total consumers count: 2
++--------------------+------------+
+| Queue Name         | Batch Size |
++--------------------+------------+
+| example_first      | 1          |
+| example_second     | 100        |
++--------------------+------------+
+```
+
+Использование
+-------------
+
+### Шаг 1: Создание схемы очереди (Definition)
+Для инициализации схемы, требуется создать класс Definition, 
+который реализует [DefinitionInterface](Definition/DefinitionInterface.php).
+В методе `init` нужно объявить структуру очереди состоящию из необходимых `exchanges`, `queue` и `bindings` 
+с помощью стандартных методов работы с каналом [php-amqplib](https://github.com/php-amqplib/php-amqplib). 
+
+[Пример создания Definition](#definition)
+
 ### Шаг 2: Создание consumer'а
 
 Далее необходимо создать класс-`consumer`, наследующий [AbstractConsumer](Consumer/AbstractConsumer.php).
 А в методе `process` реализовать обработку полученных сообщений.
 
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Acme\AppBundle\Consumer;
-
-use Wakeapp\Bundle\RabbitQueueBundle\Consumer\AbstractConsumer;
-
-class ExampleConsumer extends AbstractConsumer
-{
-    /**
-     * {@inheritDoc}
-     */
-    public function process(array $messageList): void
-    {
-        foreach ($messageList as $item) {
-            // handle some task by specific logic
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getBindQueueName(): string
-    {
-        return 'example';
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public static function getName(): string
-    {
-        return 'example';
-    }
-}
-```
+[Пример создания Consumer](#consumer)
 
 Если в проекте не работает механизм `autowire`, то вам понадобится зарегистрировать `consumer`
-с тегом `wakeapp_rabbit_queue.consumer` и опционально добавить приоритет(по умолчанию `priority: "0"`):
+с тегом `wakeapp_rabbit_queue.consumer`:
 
 ```yaml
 services:
     app.acme.consumer:
         class:      Acme\AppBundle\Consumer\ExampleConsumer
         tags:
-            - { name: wakeapp_rabbit_queue.consumer , priority: "0" }
+            - { name: wakeapp_rabbit_queue.consumer}
 ```
 
 ### Шаг 3: Загрузка схем очередей RabbitMQ
