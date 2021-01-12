@@ -16,6 +16,7 @@ Rabbit Queue Bundle
 3. [Описание компонентов](#описание-компонентов)
     - [Producer](#producer)
     - [Consumer](#consumer)
+    - [Hydrator](#hydrator)
     - [Definition](#definition)
 4. [Доступные команды](#доступные-команды)
 5. [Использование](#использование)
@@ -70,7 +71,7 @@ class AppKernel extends Kernel
 Чтобы начать использовать бандл, необходимо описать конфигурацию подключения к `RabbitMQ`.
 
 ```yaml
-# app/config.yml
+# app/packages/wakeapp_rabbit_queue.yaml
 wakeapp_rabbit_queue:
     connections:
         default:
@@ -90,10 +91,10 @@ wakeapp_rabbit_queue:
 с помощью которого можно отправлять сообщения в очередь с заданными параметрами.
 ```php
 <?php
-$data = ['message' => 'example']; # сообщение
+$data = ['message' => 'example']; # Сообщение
 $options = ['key' => 'unique_key', 'delay' => 1000]; # Опции, в зависимости от типа очереди
 
-/** @var \Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer $producer*/
+/** @var \Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer $producer */
 $producer->put('queue_name', $data, $options);
 ```
 
@@ -115,13 +116,16 @@ use Wakeapp\Bundle\RabbitQueueBundle\Consumer\AbstractConsumer;
 
 class ExampleConsumer extends AbstractConsumer
 {
-    public const DEFAULT_BATCH_SIZE = 100; #размер пачки
+    public const DEFAULT_BATCH_SIZE = 100; # Размер пачки
+
     /**
      * {@inheritDoc}
      */
     public function process(array $messageList): void
     {
         foreach ($messageList as $item) {
+            $data = $this->decodeMessageBody($item); # Decode message by hydrator
+
             // handle some task by specific logic
         }
     }
@@ -144,7 +148,17 @@ class ExampleConsumer extends AbstractConsumer
 }
 ```
 В методе `process()` необходимо реализовать обработку полученных сообщений. 
-Сообщения поступают пачками, размер которых задается константой `DEFAULT_BATCH_SIZE` (по умолчанию = 1)
+Сообщения поступают пачками, размер которых задается константой `DEFAULT_BATCH_SIZE` (по умолчанию = 1).
+
+### Hydrator
+Для удобства работы с сообщениями разных форматов бандл предоставляет инструменты гидрации (кодирование/декодирование сообщений в необходимый формат).
+
+По умолчанию доступны следующие гидраторы:
+ - JsonHydrator - для работы с сообщениями в формате json (_используется по умолчанию_).
+ - PlainTextHydrator - для работы с простыми текстовыми сообщениями.
+ 
+Также существует возможность создания собственного гидратора. 
+Для этого необходимо реализовать [HydratorInterface](Hydrator/HydratorInterface.php) и изменить параметр конфигурации `hydrator_name` на тип нового гидратора.
 
 ### Definition
 RabbitMQ позволяет создавать сложные схемы очередей, состоящие из несколько взаимосвязанных `exchange` и `queue`.
@@ -152,6 +166,7 @@ RabbitMQ позволяет создавать сложные схемы оче�
 Для удобства работы со схемами бандл предоставляет возможность сохранения схем очередей в специальные классы `Definition`, 
 которые реализуют [DefinitionInterface](Definition/DefinitionInterface.php).
 
+Пример FIFO:
 ```php
 <?php
 
@@ -199,6 +214,95 @@ class ExampleFifoDefinition implements DefinitionInterface
     public function getQueueType(): int
     {
         return QueueTypeEnum::FIFO;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getQueueName(): string
+    {
+        return self::QUEUE_NAME;
+    }
+}
+```
+
+Пример delay + deduplicate:
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Wakeapp\Bundle\RabbitQueueBundle\Definition;
+
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Exchange\AMQPExchangeType;
+use PhpAmqpLib\Wire\AMQPTable;
+
+class ExampleDeduplicateDelayDefinition implements DefinitionInterface
+{
+    public const QUEUE_NAME = QueueEnum::EXAMPLE;
+    public const ENTRY_POINT = self::QUEUE_NAME . '@exchange_deduplication';
+
+    private const SECOND_POINT = self::QUEUE_NAME . '@exchange_delay';
+    private const THIRD_POINT = self::QUEUE_NAME;
+
+    /**
+     * {@inheritDoc}
+     */
+    public function init(AMQPStreamConnection $connection): void
+    {
+        $channel = $connection->channel();
+
+        $channel->exchange_declare(
+            self::ENTRY_POINT,
+            'x-message-deduplication',
+            false,
+            true,
+            false,
+            false,
+            false,
+            new AMQPTable(['x-cache-size' => 1_000_000_000])
+        );
+
+        $channel->exchange_declare(
+            self::SECOND_POINT,
+            'x-delayed-message',
+            false,
+            true,
+            false,
+            false,
+            false,
+            new AMQPTable(['x-delayed-type' => AMQPExchangeType::DIRECT])
+        );
+
+        $channel->queue_declare(
+            self::THIRD_POINT,
+            false,
+            true,
+            false,
+            false
+        );
+
+        $channel->exchange_bind(self::SECOND_POINT, self::ENTRY_POINT);
+        $channel->queue_bind(self::THIRD_POINT, self::SECOND_POINT);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getEntryPointName(): string
+    {
+        return self::ENTRY_POINT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getQueueType(): int
+    {
+        return QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE | QueueTypeEnum::DELAY;
     }
 
     /**
@@ -282,7 +386,7 @@ services:
     app.acme.consumer:
         class:      Acme\AppBundle\Consumer\ExampleConsumer
         tags:
-            - { name: wakeapp_rabbit_queue.consumer}
+            - { name: wakeapp_rabbit_queue.consumer }
 ```
 
 ### Шаг 3: Загрузка схем очередей RabbitMQ
@@ -296,7 +400,7 @@ php bin/console rabbit:definition:update
 
 ### Шаг 4: Запуск consumer'а
 
-Чтобы запустить `consumer` необходимо выполнить команду `rabbit:consumer:run`rabbit. 
+Чтобы запустить `consumer` необходимо выполнить команду `rabbit:consumer:run` rabbit. 
 Для запуска нужно передать имя конкретного `consumer`. 
 
 Запуск ранее описанного `consumer`'а будет выглядеть так:
