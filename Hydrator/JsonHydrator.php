@@ -7,6 +7,9 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Hydrator;
 use Wakeapp\Bundle\RabbitQueueBundle\Exception\RabbitQueueException;
 use JsonException;
 
+use const JSON_THROW_ON_ERROR;
+use function json_encode;
+
 class JsonHydrator implements HydratorInterface
 {
     public const KEY = 'application/json';

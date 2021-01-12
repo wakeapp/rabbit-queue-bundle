@@ -7,6 +7,8 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Exception;
 use PhpAmqpLib\Message\AMQPMessage;
 use RuntimeException;
 
+use function sprintf;
+
 class RewindPartialException extends RuntimeException
 {
     /**

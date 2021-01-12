@@ -21,12 +21,14 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use const JSON_THROW_ON_ERROR;
 use function array_map;
 use function count;
 use function explode;
 use function in_array;
 use function ini_get;
 use function pcntl_signal;
+use function json_encode;
 
 class ConsumerRunCommand extends Command
 {
