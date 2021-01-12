@@ -22,6 +22,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 use const JSON_THROW_ON_ERROR;
+
 use function array_map;
 use function count;
 use function explode;
