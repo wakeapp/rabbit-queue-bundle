@@ -8,23 +8,30 @@ Rabbit Queue Bundle
 
 Содержание
 --------
-
-1. [Установка](#установка)
+1. [Требования](#требования)
+2. [Установка](#установка)
     - [Загрузка бандла](#шаг-1-загрузка-бандла)
     - [Подключение бандла](#шаг-2-подключение-бандла)
-2. [Конфигурация](#конфигурация)
-3. [Описание компонентов](#описание-компонентов)
+3. [Конфигурация](#конфигурация)
+4. [Описание компонентов](#описание-компонентов)
     - [Producer](#producer)
     - [Consumer](#consumer)
     - [Hydrator](#hydrator)
     - [Definition](#definition)
-4. [Доступные команды](#доступные-команды)
-5. [Использование](#использование)
+5. [Доступные команды](#доступные-команды)
+6. [Использование](#использование)
     - [Шаг 1: Создание схемы очереди (Definition)](#шаг-1-создание-схемы-очереди-definition)
     - [Шаг 2: Создание consumer'а](#шаг-2-создание-consumerа)
     - [Шаг 3: Загрузка схем очередей RabbitMQ](#шаг-3-загрузка-схем-очередей-rabbitmq)
     - [Шаг 4: Запуск consumer'а](#шаг-4-запуск-consumerа)
-6. [Лицензия](#лицензия)
+7. [Лицензия](#лицензия)
+
+Требования
+---------
+
+Для корректной работы бандла требуется подключить следующие плагины RabbitMQ:
+ - [RabbitMQ Message Deduplication Plugin](https://github.com/noxdafox/rabbitmq-message-deduplication)
+ - [RabbitMQ Delayed Message Plugin](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
 
 Установка
 ---------
@@ -242,7 +249,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 
 class ExampleDeduplicateDelayDefinition implements DefinitionInterface
 {
-    public const QUEUE_NAME = QueueEnum::EXAMPLE;
+    public const QUEUE_NAME = QueueEnum::EXAMPLE_DEDUPLICATE_DELAY;
     public const ENTRY_POINT = self::QUEUE_NAME . '@exchange_deduplication';
 
     private const SECOND_POINT = self::QUEUE_NAME . '@exchange_delay';

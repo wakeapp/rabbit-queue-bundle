@@ -93,11 +93,21 @@ class RabbitMqProducer implements RabbitMqProducerInterface
      */
     protected function putToDeduplicateDelay(DefinitionInterface $definition, string $dataString, array $options): void
     {
-        if (!is_string($options[QueueOptionEnum::KEY]) || !is_int($options[QueueOptionEnum::DELAY])) {
+        if (empty($options[QueueOptionEnum::KEY]) || !is_string($options[QueueOptionEnum::KEY])) {
             $message = sprintf(
-                'Element for queue "%s" must be with options %s/%s. See %s',
+                'Element for queue "%s" must have option "%s" with type string. See %s',
                 $definition::getQueueName(),
                 QueueOptionEnum::KEY,
+                QueueOptionEnum::class
+            );
+
+            throw new RabbitQueueException($message);
+        }
+
+        if (empty($options[QueueOptionEnum::DELAY]) || !is_int($options[QueueOptionEnum::DELAY])) {
+            $message = sprintf(
+                'Element for queue "%s" must have option "%s" with type int. See %s',
+                $definition::getQueueName(),
                 QueueOptionEnum::DELAY,
                 QueueOptionEnum::class
             );

@@ -12,7 +12,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 
 class ExampleDefinition implements DefinitionInterface
 {
-    public const QUEUE_NAME = QueueEnum::EXAMPLE;
+    public const QUEUE_NAME = QueueEnum::EXAMPLE_DEDUPLICATE_DELAY;
     public const ENTRY_POINT = self::QUEUE_NAME . '@exchange_deduplication';
 
     private const SECOND_POINT = self::QUEUE_NAME . '@exchange_delay';

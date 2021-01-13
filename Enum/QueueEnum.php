@@ -6,6 +6,6 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Enum;
 
 class QueueEnum
 {
-    public const EXAMPLE = 'example';
+    public const EXAMPLE_DEDUPLICATE_DELAY = 'example_deduplicate_delay';
     public const EXAMPLE_FIFO = 'example_fifo';
 }

@@ -20,7 +20,7 @@ class ExampleConsumer extends AbstractConsumer
      */
     public function getBindQueueName(): string
     {
-        return QueueEnum::EXAMPLE;
+        return QueueEnum::EXAMPLE_DEDUPLICATE_DELAY;
     }
 
     /**
@@ -28,6 +28,6 @@ class ExampleConsumer extends AbstractConsumer
      */
     public static function getName(): string
     {
-        return QueueEnum::EXAMPLE;
+        return QueueEnum::EXAMPLE_DEDUPLICATE_DELAY;
     }
 }

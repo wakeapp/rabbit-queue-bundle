@@ -34,7 +34,7 @@ class RabbitMqProducerTest extends TestCase
         $definitionRegistry
             ->method('getDefinition')
             ->willReturnMap([
-                [QueueEnum::EXAMPLE, new ExampleDefinition()],
+                [QueueEnum::EXAMPLE_DEDUPLICATE_DELAY, new ExampleDefinition()],
                 [QueueEnum::EXAMPLE_FIFO, new ExampleFifoDefinition()],
             ])
         ;
@@ -56,7 +56,7 @@ class RabbitMqProducerTest extends TestCase
             'delay' => 10000,
         ];
 
-        $this->producer->put(QueueEnum::EXAMPLE, self::TEST_MESSAGE, $options);
+        $this->producer->put(QueueEnum::EXAMPLE_DEDUPLICATE_DELAY, self::TEST_MESSAGE, $options);
 
         self::assertTrue(true);
     }
@@ -68,7 +68,7 @@ class RabbitMqProducerTest extends TestCase
     {
         $this->expectException(RabbitQueueException::class);
 
-        $this->producer->put(QueueEnum::EXAMPLE, self::TEST_MESSAGE, $options);
+        $this->producer->put(QueueEnum::EXAMPLE_DEDUPLICATE_DELAY, self::TEST_MESSAGE, $options);
     }
 
     public function testPutToFifoTest(): void
