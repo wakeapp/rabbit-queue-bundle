@@ -1,3 +1,5 @@
-## [0.1.0]
+## [Unreleased]
+
+## [0.1.0] - 2021-01-14
 ### Added
-- First basic version of the bundle.
+- The first basic version of the bundle.
