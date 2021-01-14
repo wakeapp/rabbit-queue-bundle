@@ -1,0 +1,7 @@
+.gitattributes                  export-ignore
+.gitignore                      export-ignore
+phpunit.xml.dist                export-ignore
+Tests/                          export-ignore
+Consumer/Example*.php           export-ignore
+Definition/Example*.php         export-ignore
+Enum/QueueEnum.php              export-ignore
