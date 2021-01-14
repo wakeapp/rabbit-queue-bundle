@@ -421,4 +421,4 @@ php bin/console rabbit:consumer:run example
 Лицензия
 --------
 
-![license](https://img.shields.io/badge/License-proprietary-red.svg?style=flat-square)
+[![license](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](./LICENSE)
