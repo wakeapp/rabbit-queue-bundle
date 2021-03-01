@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Command;
 
-use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Exchange\AMQPExchangeType;
+use PhpAmqpLib\Wire\AMQPTable;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\ExchangeEnum;
 
 class UpdateDefinitionCommand extends Command
 {
@@ -56,8 +59,29 @@ class UpdateDefinitionCommand extends Command
     {
         foreach ($this->definitionList as $definition) {
             $definition->init($this->connection);
+
+            $this->bindRetryExchange($definition);
         }
 
         return self::SUCCESS;
+    }
+
+    private function bindRetryExchange(DefinitionInterface $definition): void
+    {
+        $queueName = $definition::getQueueName();
+        $channel = $this->connection->channel();
+
+        $channel->exchange_declare(
+            ExchangeEnum::RETRY_EXCHANGE_NAME,
+            'x-delayed-message',
+            false,
+            true,
+            false,
+            false,
+            false,
+            new AMQPTable(['x-delayed-type' => AMQPExchangeType::DIRECT])
+        );
+
+        $channel->queue_bind($queueName, ExchangeEnum::RETRY_EXCHANGE_NAME, $queueName);
     }
 }
