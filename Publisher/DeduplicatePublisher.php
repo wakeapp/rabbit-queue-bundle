@@ -21,7 +21,9 @@ class DeduplicatePublisher extends AbstractPublisher
      */
     protected function prepareOptions(DefinitionInterface $definition, array $options): array
     {
-        if (!is_string($options[QueueOptionEnum::KEY])) {
+        $key = $options[QueueOptionEnum::KEY] ?? null;
+
+        if (!is_string($key)) {
             $message = sprintf(
                 'Element for queue "%s" must be with option %s. See %s',
                 $definition::getQueueName(),
@@ -32,7 +34,7 @@ class DeduplicatePublisher extends AbstractPublisher
             throw new RabbitQueueException($message);
         }
 
-        $amqpTableOption[QueueHeaderOptionEnum::X_DEDUPLICATION_HEADER] = $options[QueueOptionEnum::KEY];
+        $amqpTableOption[QueueHeaderOptionEnum::X_DEDUPLICATION_HEADER] = $key;
 
         return $amqpTableOption;
     }

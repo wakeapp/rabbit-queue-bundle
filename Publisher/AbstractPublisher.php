@@ -39,8 +39,9 @@ abstract class AbstractPublisher implements PublisherInterface
             'content_type' => $this->hydratorRegistry->getHydrator($this->hydratorName)::getKey(),
         ]);
 
-        if (!empty($options)) {
-            $amqpTableOptions = $this->prepareOptions($definition, $options);
+        $amqpTableOptions = $this->prepareOptions($definition, $options);
+
+        if (!empty($amqpTableOptions)) {
             $message->set('application_headers', new AMQPTable($amqpTableOptions));
         }
 

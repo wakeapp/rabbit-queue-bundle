@@ -11,6 +11,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
 use Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerRunCommand;
 use Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry;
+use Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry;
 
 class ConsumerRunCommandTest extends TestCase
 {
@@ -26,7 +27,8 @@ class ConsumerRunCommandTest extends TestCase
         $command = new ConsumerRunCommand();
         $command->dependencyInjection(
             $this->createMock(ConsumerRegistry::class),
-            $this->createMock(RabbitMqClient::class)
+            $this->createMock(RabbitMqClient::class),
+            $this->createMock(DefinitionRegistry::class),
         );
 
         $this->application->add($command);
@@ -34,7 +36,7 @@ class ConsumerRunCommandTest extends TestCase
 
     public function testExecute(): void
     {
-        $command = $this->application->find('rabbit:consume:run');
+        $command = $this->application->find('rabbit:consumer:run');
         $commandTester = new CommandTester($command);
 
         $commandTester->execute(['name' => 'example']);
@@ -48,7 +50,7 @@ class ConsumerRunCommandTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
 
-        $command = $this->application->find('rabbit:consume:run');
+        $command = $this->application->find('rabbit:consumer:run');
         $commandTester = new CommandTester($command);
 
         $commandTester->execute([]);

@@ -19,7 +19,9 @@ class DelayPublisher extends AbstractPublisher
 
     protected function prepareOptions(DefinitionInterface $definition, array $options): array
     {
-        if (!is_int($options[QueueOptionEnum::DELAY])) {
+        $delay = $options[QueueOptionEnum::DELAY] ?? null;
+
+        if (!is_int($delay)) {
             $message = sprintf(
                 'Element for queue "%s" must be with option %s. See %s',
                 $definition::getQueueName(),
@@ -30,7 +32,7 @@ class DelayPublisher extends AbstractPublisher
             throw new RabbitQueueException($message);
         }
 
-        $amqpTableOption[QueueHeaderOptionEnum::X_DELAY] = $options[QueueOptionEnum::DELAY] * 1000;
+        $amqpTableOption[QueueHeaderOptionEnum::X_DELAY] = $delay * 1000;
 
         return $amqpTableOption;
     }
