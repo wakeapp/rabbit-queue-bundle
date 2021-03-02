@@ -210,10 +210,10 @@ class ConsumerRunCommand extends Command
      */
     private function getPartialMessageList(array $messageList, array $deliveryTagList): array
     {
-        $rewindDeliveryTagList = array_flip($deliveryTagList);
+        $deliveryTagList = array_flip($deliveryTagList);
 
-        $intersectMessageList = array_intersect_key($messageList, $rewindDeliveryTagList);
-        $diffMessageList = array_diff_key($messageList, $rewindDeliveryTagList);
+        $intersectMessageList = array_intersect_key($messageList, $deliveryTagList);
+        $diffMessageList = array_diff_key($messageList, $deliveryTagList);
 
         return [$intersectMessageList, $diffMessageList];
     }

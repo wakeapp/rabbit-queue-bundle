@@ -6,5 +6,5 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Enum;
 
 class ExchangeEnum
 {
-    public const RETRY_EXCHANGE_NAME = 'retry@exchange_delay';
+    public const RETRY_EXCHANGE = 'retry@exchange_delay';
 }

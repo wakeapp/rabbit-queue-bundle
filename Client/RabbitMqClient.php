@@ -99,7 +99,7 @@ class RabbitMqClient
 
             $message->set('application_headers', $headers);
 
-            $this->channel->batch_basic_publish($message, ExchangeEnum::RETRY_EXCHANGE_NAME, $queueName);
+            $this->channel->batch_basic_publish($message, ExchangeEnum::RETRY_EXCHANGE, $queueName);
         }
 
         $this->channel->publish_batch();
@@ -122,7 +122,6 @@ class RabbitMqClient
 
     /**
      * @param AMQPMessage[] $messageList
-     * @param bool $multiple
      * @param bool $requeue
      */
     public function nackList(array $messageList, bool $requeue = true): void
