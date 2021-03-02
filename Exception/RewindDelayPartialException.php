@@ -6,6 +6,8 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Exception;
 
 use RuntimeException;
 
+use function is_int;
+
 class RewindDelayPartialException extends RuntimeException
 {
     /**

@@ -22,8 +22,8 @@ class ReleasePartialException extends RuntimeException
      */
     public function __construct(array $releaseDeliveryTagList)
     {
-        foreach ($releaseDeliveryTagList as $releaseMessage) {
-            if (!is_int($releaseMessage)) {
+        foreach ($releaseDeliveryTagList as $deliveryTag) {
+            if (!is_int($deliveryTag)) {
                 throw new RabbitQueueException('Delivery tag must be integer');
             }
         }

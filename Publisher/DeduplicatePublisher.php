@@ -11,6 +11,7 @@ use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
 use Wakeapp\Bundle\RabbitQueueBundle\Exception\RabbitQueueException;
 
 use function sprintf;
+use function is_string;
 
 class DeduplicatePublisher extends AbstractPublisher
 {
