@@ -88,6 +88,9 @@ wakeapp_rabbit_queue:
             username: 'rabbitmq_user'     # логин для подключения к rabbitMQ
             password: 'rabbitmq_password' # пароль для подключения к rabbitMQ
             vhost: 'example_vhost'        # виртуальный хост для подключения (необязательный параметр)
+    consumer:
+      wait_timeout: 3                     # таймаут ожидания новых сообщений для обработки пачки
+      idle_timeout: 0                     # таймаут ожидания сообщений в пустой очереди (по умолчанию 0 - нет таймаута)
 ```
 
 Описание компонентов
