@@ -15,6 +15,7 @@ Rabbit Queue Bundle
 3. [Конфигурация](#конфигурация)
 4. [Описание компонентов](#описание-компонентов)
     - [Producer](#producer)
+    - [Publisher](#publisher)
     - [Consumer](#consumer)
     - [Hydrator](#hydrator)
     - [Definition](#definition)
@@ -105,6 +106,74 @@ $options = ['key' => 'unique_key', 'delay' => 1000]; # Опции, в завис
 $producer->put('queue_name', $data, $options);
 ```
 
+### Publisher
+Публикация сообщений в очередь происходит с помощью специальных классов паблишеров.
+`Producer` определяет какой паблишер использовать для публикации по типу очереди, с которым связан паблишер.
+
+Соответственно на каждый новый тип очереди требуется свой класс `Publisher` с кастомной логикой обработки/валидации и публикации сообщений в канал. 
+
+Бандл поддерживает следующие типы очередей:
+ - FIFO
+ - Delay
+ - Deduplicate
+ - Deduplicate + Delay
+
+При желании добавить собственный тип очереди, необходимо создать класс `Publisher` наследующий [AbstractPublisher](Publisher/AbstractPublisher.php) или реализующий [PublisherInterface](Publisher/PublisherInterface.php).
+
+Пример DelayPublisher:
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Wakeapp\Bundle\RabbitQueueBundle\Publisher;
+
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueHeaderOptionEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueOptionEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\RabbitQueueException;
+
+use function is_int;
+use function sprintf;
+
+class DelayPublisher extends AbstractPublisher
+{
+    public const QUEUE_TYPE = QueueTypeEnum::FIFO | QueueTypeEnum::DELAY;
+    
+    /**
+    * Custom prepare options logic
+    */
+    protected function prepareOptions(DefinitionInterface $definition, array $options): array
+    {
+        $delay = $options[QueueOptionEnum::DELAY] ?? null;
+
+        if (!is_int($delay)) {
+            $message = sprintf(
+                'Element for queue "%s" must be with option %s. See %s',
+                $definition::getQueueName(),
+                QueueOptionEnum::DELAY,
+                QueueOptionEnum::class
+            );
+
+            throw new RabbitQueueException($message);
+        }
+
+        $amqpTableOption[QueueHeaderOptionEnum::X_DELAY] = $delay * 1000;
+
+        return $amqpTableOption;
+    }
+
+    /**
+    * Queue type supported by publisher
+    */
+    public static function getQueueType(): string
+    {
+        return (string) self::QUEUE_TYPE;
+    }
+}
+```
+
 ### Consumer
 `Consumer` - Используется для получения и обработки сообщений из очереди.
 
@@ -156,6 +225,8 @@ class ExampleConsumer extends AbstractConsumer
 ```
 В методе `process()` необходимо реализовать обработку полученных сообщений. 
 Сообщения поступают пачками, размер которых задается константой `DEFAULT_BATCH_SIZE` (по умолчанию = 1).
+
+_Максимальный размер пачки 65535_.
 
 ### Hydrator
 Для удобства работы с сообщениями разных форматов бандл предоставляет инструменты гидрации (кодирование/декодирование сообщений в необходимый формат).

@@ -34,6 +34,17 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
+                ->arrayNode('consumer')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->integerNode('idle_timeout')
+                            ->defaultValue(0)
+                        ->end()
+                        ->integerNode('wait_timeout')
+                            ->defaultValue(3)
+                        ->end()
+                    ->end()
+                ->end()
             ->end()
         ;
 

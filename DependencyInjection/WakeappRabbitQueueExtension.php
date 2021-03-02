@@ -32,6 +32,7 @@ class WakeappRabbitQueueExtension extends Extension
 
         $container->setParameter('wakeapp_rabbit_queue.hydrator_name', $config['hydrator_name']);
         $this->setConnectionParams($container, $config['connections']);
+        $this->setConsumerParams($container, $config['consumer']);
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
@@ -75,5 +76,11 @@ class WakeappRabbitQueueExtension extends Extension
         $container->setParameter('wakeapp_rabbit_queue.connection.username', $connection['username']);
         $container->setParameter('wakeapp_rabbit_queue.connection.password', $connection['password']);
         $container->setParameter('wakeapp_rabbit_queue.connection.vhost', $connection['vhost']);
+    }
+
+    private function setConsumerParams(ContainerBuilder $container, array $consumerConfig): void
+    {
+        $container->setParameter('wakeapp_rabbit_queue.consumer.idle_timeout', $consumerConfig['idle_timeout']);
+        $container->setParameter('wakeapp_rabbit_queue.consumer.wait_timeout', $consumerConfig['wait_timeout']);
     }
 }

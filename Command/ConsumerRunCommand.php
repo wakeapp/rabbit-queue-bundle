@@ -4,17 +4,9 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Command;
 
-use PhpAmqpLib\Exception\AMQPTimeoutException;
-use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
-use Wakeapp\Bundle\RabbitQueueBundle\Consumer\ConsumerInterface;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\ConsumerNotFoundException;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\ConsumerSilentException;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\ReleasePartialException;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\RewindDelayPartialException;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\RewindPartialException;
-use Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry;
 use Exception;
 use JsonException;
+use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -23,39 +15,51 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
+use Wakeapp\Bundle\RabbitQueueBundle\Consumer\ConsumerInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\ConsumerNotFoundException;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\ConsumerSilentException;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\ReleasePartialException;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\RewindDelayPartialException;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\RewindPartialException;
+use Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry;
 use Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry;
 
-use const JSON_THROW_ON_ERROR;
-
+use function array_diff_key;
+use function array_flip;
+use function array_intersect_key;
 use function array_map;
 use function count;
 use function explode;
 use function in_array;
 use function ini_get;
-use function pcntl_signal;
 use function json_encode;
+use function pcntl_signal;
+
+use const JSON_THROW_ON_ERROR;
 
 class ConsumerRunCommand extends Command
 {
-    private const IDLE_TIMEOUT = 0;
-    private const TIMEOUT_WAIT = 3;
-
     protected static $defaultName = 'rabbit:consumer:run';
 
     private ConsumerRegistry $consumerRegistry;
     private RabbitMqClient $client;
     private DefinitionRegistry $definitionRegistry;
+    private ParameterBagInterface $parameterBag;
     private ?LoggerInterface $logger;
 
     public function dependencyInjection(
         ConsumerRegistry $consumerRegistry,
         RabbitMqClient $client,
         DefinitionRegistry $definitionRegistry,
+        ParameterBagInterface $parameterBag,
         ?LoggerInterface $logger = null
     ): void {
         $this->consumerRegistry = $consumerRegistry;
         $this->client = $client;
         $this->definitionRegistry = $definitionRegistry;
+        $this->parameterBag = $parameterBag;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -125,7 +129,7 @@ class ConsumerRunCommand extends Command
                 $this->batchConsume($consumer, $messageList);
             }
 
-            $timeout = empty($messageList) ? self::IDLE_TIMEOUT : self::TIMEOUT_WAIT;
+            $timeout = empty($messageList) ? $this->getIdleTimeout() : $this->getWaitTimeout();
 
             try {
                 $this->client->wait($timeout);
@@ -139,7 +143,7 @@ class ConsumerRunCommand extends Command
         return self::SUCCESS;
     }
 
-    public function batchConsume(ConsumerInterface $consumer, array &$messageList): void
+    protected function batchConsume(ConsumerInterface $consumer, array &$messageList): void
     {
         try {
             $consumer->process($messageList);
@@ -153,24 +157,29 @@ class ConsumerRunCommand extends Command
                 $consumer->stopPropagation();
             }
         } catch (RewindPartialException $exception) {
-            $rewindMessageList = $exception->getRewindMessageList();
-            $ackMessageList = $this->getDiffMessageList($messageList, $rewindMessageList);
+            $rewindDeliveryTagList = $exception->getRewindDeliveryTagList();
+
+            [$rewindMessageList, $ackMessageList] = $this->getPartialMessageList($messageList, $rewindDeliveryTagList);
 
             $this->client->rewindList($consumer->getBindQueueName(), $rewindMessageList);
             $this->client->ackList($ackMessageList);
         } catch (RewindDelayPartialException $exception) {
             $definition = $this->definitionRegistry->getDefinition($consumer->getBindQueueName());
+            $rewindDeliveryTagList = $exception->getRewindDeliveryTagList();
 
-            $rewindMessageList = $exception->getRewindMessageList();
-            $ackMessageList = $this->getDiffMessageList($messageList, $rewindMessageList);
+            [$rewindMessageList, $ackMessageList] = $this->getPartialMessageList($messageList, $rewindDeliveryTagList);
 
             $this->client->rewindList($definition::getQueueName(), $rewindMessageList, $exception->getDelay());
             $this->client->ackList($ackMessageList);
         } catch (ConsumerSilentException $exception) {
             $this->client->nackList($messageList);
         } catch (ReleasePartialException $exception) {
-            $releaseMessageList = $exception->getReleaseMessageList();
-            $ackMessageList = $this->getDiffMessageList($messageList, $releaseMessageList);
+            $releaseDeliveryTagList = $exception->getReleaseDeliveryTagList();
+
+            [$releaseMessageList, $ackMessageList] = $this->getPartialMessageList(
+                $messageList,
+                $releaseDeliveryTagList
+            );
 
             $this->client->nackList($releaseMessageList);
             $this->client->ackList($ackMessageList);
@@ -195,14 +204,27 @@ class ConsumerRunCommand extends Command
 
     /**
      * @param AMQPMessage[] $messageList
-     * @param AMQPMessage[] $secondMessageList
+     * @param int[] $deliveryTagList
      *
-     * @return AMQPMessage[]
+     * @return array<int, array<int, AMQPMessage>>
      */
-    private function getDiffMessageList(array $messageList, array $secondMessageList): array
+    private function getPartialMessageList(array $messageList, array $deliveryTagList): array
     {
-        return array_udiff($messageList, $secondMessageList, static function (AMQPMessage $a, AMQPMessage $b) {
-            return $a->getDeliveryTag() <=> $b->getDeliveryTag();
-        });
+        $rewindDeliveryTagList = array_flip($deliveryTagList);
+
+        $intersectMessageList = array_intersect_key($messageList, $rewindDeliveryTagList);
+        $diffMessageList = array_diff_key($messageList, $rewindDeliveryTagList);
+
+        return [$intersectMessageList, $diffMessageList];
+    }
+
+    private function getIdleTimeout(): int
+    {
+        return $this->parameterBag->get('wakeapp_rabbit_queue.consumer.idle_timeout');
+    }
+
+    private function getWaitTimeout(): int
+    {
+        return $this->parameterBag->get('wakeapp_rabbit_queue.consumer.wait_timeout');
     }
 }

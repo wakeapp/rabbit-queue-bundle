@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Client;
 
+use PhpAmqpLib\Wire\AMQPTable;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\ExchangeEnum;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueHeaderOptionEnum;
 use ErrorException;
@@ -89,11 +90,14 @@ class RabbitMqClient
         $this->ackList($messageList);
 
         foreach ($messageList as $message) {
-            $headers = $message->get('application_headers');
+            $headers = $message->has('application_headers') ? $message->get('application_headers') : new AMQPTable();
+
             $retryCount = $headers->getNativeData()[QueueHeaderOptionEnum::X_RETRY] ?? 0;
 
             $headers->set(QueueHeaderOptionEnum::X_DELAY, $delay * 1000);
             $headers->set(QueueHeaderOptionEnum::X_RETRY, ++$retryCount);
+
+            $message->set('application_headers', $headers);
 
             $this->channel->batch_basic_publish($message, ExchangeEnum::RETRY_EXCHANGE_NAME, $queueName);
         }

@@ -1,4 +1,13 @@
-## [Unreleased]
+## [0.1.2] - 
+### Added
+- Added retry exchange for rewind message in queue with delay
+- Added config parameters `idle_timeout` and `wait_timeout`
+- Added publishers: `FifoPublisher`, `DelayPublisher`, `FifoPublisher`, `DeduplicatePublisher`, `DeduplicateDelayPublisher`
+
+### Changed
+- Optimized receiving a batch of messages in `ConsumerRunCommand`
+- Extended supported queue types by `Delay`, `Deduplicate`
+- Fix rewind partial messages by delivery tag. Changed `ReleasePartialException`, `RewindDelayPartialException`, `RewindPartialException`
 
 ## [0.1.1] - 2021-01-14
 ### Changed

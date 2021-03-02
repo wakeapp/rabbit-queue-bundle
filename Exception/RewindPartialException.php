@@ -4,42 +4,40 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Exception;
 
-use PhpAmqpLib\Message\AMQPMessage;
 use RuntimeException;
 
-use function sprintf;
+use function is_int;
 
 class RewindPartialException extends RuntimeException
 {
     /**
-     * @var AMQPMessage[]
+     * @var int[]
      */
-    private array $rewindMessageList;
+    private array $rewindDeliveryTagList;
 
     /**
-     * @param string $name
-     * @param AMQPMessage[] $rewindMessageList
+     * @param int[] $rewindDeliveryTagList
      *
      * @throws RabbitQueueException
      */
-    public function __construct(string $name, array $rewindMessageList)
+    public function __construct(array $rewindDeliveryTagList)
     {
-        foreach ($rewindMessageList as $rewindMessage) {
-            if (!$rewindMessage instanceof AMQPMessage) {
-                throw new RabbitQueueException(sprintf('Rewind message must be instance of %s', AMQPMessage::class));
+        foreach ($rewindDeliveryTagList as $deliveryTag) {
+            if (!is_int($deliveryTag)) {
+                throw new RabbitQueueException('Delivery tag must be integer');
             }
         }
 
-        $this->rewindMessageList = $rewindMessageList;
+        $this->rewindDeliveryTagList = $rewindDeliveryTagList;
 
-        parent::__construct(sprintf('Consumer "%s" rewind partial messageList', $name));
+        parent::__construct('Consumer rewind partial message list');
     }
 
     /**
-     * @return AMQPMessage[]
+     * @return int[]
      */
-    public function getRewindMessageList(): array
+    public function getRewindDeliveryTagList(): array
     {
-        return $this->rewindMessageList;
+        return $this->rewindDeliveryTagList;
     }
 }

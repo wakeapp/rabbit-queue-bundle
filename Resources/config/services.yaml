@@ -73,7 +73,7 @@ services:
 
     Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerRunCommand:
         calls:
-            - ['dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry', '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient', '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry', '@?logger' ]]
+            - ['dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry', '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient', '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry', '@Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface','@?logger' ]]
         tags: [ 'console.command' ]
 
     Wakeapp\Bundle\RabbitQueueBundle\Command\UpdateDefinitionCommand:

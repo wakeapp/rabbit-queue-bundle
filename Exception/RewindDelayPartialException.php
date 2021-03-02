@@ -4,44 +4,42 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Exception;
 
-use PhpAmqpLib\Message\AMQPMessage;
 use RuntimeException;
 
 class RewindDelayPartialException extends RuntimeException
 {
     /**
-     * @var AMQPMessage[]
+     * @var int[]
      */
-    private array $rewindMessageList;
+    private array $rewindDeliveryTagList;
     private int $delay;
 
     /**
-     * @param string $name
-     * @param AMQPMessage[] $rewindMessageList
+     * @param int[] $rewindDeliveryTagList
      * @param int $delay
      *
      * @throws RabbitQueueException
      */
-    public function __construct(string $name, array $rewindMessageList, int $delay)
+    public function __construct(array $rewindDeliveryTagList, int $delay)
     {
-        foreach ($rewindMessageList as $rewindMessage) {
-            if (!$rewindMessage instanceof AMQPMessage) {
-                throw new RabbitQueueException(sprintf('Rewind message must be instance of %s', AMQPMessage::class));
+        foreach ($rewindDeliveryTagList as $deliveryTag) {
+            if (!is_int($deliveryTag)) {
+                throw new RabbitQueueException('Delivery tag must be integer');
             }
         }
 
-        $this->rewindMessageList = $rewindMessageList;
+        $this->rewindDeliveryTagList = $rewindDeliveryTagList;
         $this->delay = $delay;
 
-        parent::__construct(sprintf('Consumer "%s" rewind delay partial messageList', $name));
+        parent::__construct('Consumer rewind delay partial messageList');
     }
 
     /**
-     * @return AMQPMessage[]
+     * @return int[]
      */
-    public function getRewindMessageList(): array
+    public function getRewindDeliveryTagList(): array
     {
-        return $this->rewindMessageList;
+        return $this->rewindDeliveryTagList;
     }
 
     public function getDelay(): int
