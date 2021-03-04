@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Tester\CommandTester;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
 use Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerRunCommand;
 use Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry;
@@ -29,6 +30,7 @@ class ConsumerRunCommandTest extends TestCase
             $this->createMock(ConsumerRegistry::class),
             $this->createMock(RabbitMqClient::class),
             $this->createMock(DefinitionRegistry::class),
+            $this->createMock(ParameterBagInterface::class)
         );
 
         $this->application->add($command);
