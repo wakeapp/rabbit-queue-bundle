@@ -14,7 +14,6 @@ use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
 class DeduplicatePublisherTest extends AbstractTestCase
 {
-    public const TEST_MESSAGE = '{"test": "test"}';
     public const TEST_OPTIONS = ['key' => 'test'];
     public const QUEUE_TYPE = QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE;
 

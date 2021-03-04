@@ -44,9 +44,4 @@ class DeduplicatePublisher extends AbstractPublisher
     {
         return (string) self::QUEUE_TYPE;
     }
-
-    protected function getDefinitionExchangeName(DefinitionInterface $definition): string
-    {
-        return '';
-    }
 }

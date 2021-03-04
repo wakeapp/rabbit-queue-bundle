@@ -13,7 +13,6 @@ use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
 class FifoPublisherTest extends AbstractTestCase
 {
-    public const TEST_MESSAGE = '{"test": "test"}';
     public const QUEUE_TYPE = QueueTypeEnum::FIFO;
 
     public function testPublish(): void

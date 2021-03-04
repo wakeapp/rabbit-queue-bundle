@@ -14,7 +14,6 @@ use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
 class DelayPublisherTest extends AbstractTestCase
 {
-    public const TEST_MESSAGE = '{"test": "test"}';
     public const TEST_OPTIONS = ['delay' => 10];
     public const QUEUE_TYPE = QueueTypeEnum::FIFO | QueueTypeEnum::DELAY;
 
