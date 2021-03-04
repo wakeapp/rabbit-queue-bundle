@@ -4,40 +4,34 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Tests\Publisher;
 
-use PHPUnit\Framework\TestCase;
+use PhpAmqpLib\Message\AMQPMessage;
 use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
-use Wakeapp\Bundle\RabbitQueueBundle\Definition\ExampleDefinition;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
 use Wakeapp\Bundle\RabbitQueueBundle\Exception\RabbitQueueException;
 use Wakeapp\Bundle\RabbitQueueBundle\Hydrator\JsonHydrator;
 use Wakeapp\Bundle\RabbitQueueBundle\Publisher\DeduplicatePublisher;
-use Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry;
+use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
-class DeduplicatePublisherTest extends TestCase
+class DeduplicatePublisherTest extends AbstractTestCase
 {
     public const TEST_MESSAGE = '{"test": "test"}';
     public const TEST_OPTIONS = ['key' => 'test'];
-
-    private DeduplicatePublisher $publisher;
-
-    protected function setUp(): void
-    {
-        $client = $this->createMock(RabbitMqClient::class);
-        $hydratorRegistry = $this->createMock(HydratorRegistry::class);
-        $hydratorRegistry
-            ->method('getHydrator')
-            ->with(JsonHydrator::KEY)
-            ->willReturn(new JsonHydrator())
-        ;
-
-        $this->publisher = new DeduplicatePublisher($client, $hydratorRegistry, JsonHydrator::KEY);
-
-        parent::setUp();
-    }
+    public const QUEUE_TYPE = QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE;
 
     public function testPublish(): void
     {
-        $definition = new ExampleDefinition();
-        $this->publisher->publish($definition, self::TEST_MESSAGE, self::TEST_OPTIONS);
+        $definition = $this->createDefinitionMock(self::TEST_QUEUE_NAME, self::TEST_EXCHANGE, self::QUEUE_TYPE);
+        $hydratorRegistry = $this->createHydratorRegistryMock();
+
+        $client = $this->createMock(RabbitMqClient::class);
+        $client->expects(self::once())
+            ->method('publish')
+            ->with(self::isInstanceOf(AMQPMessage::class), '', self::TEST_QUEUE_NAME)
+        ;
+
+        $publisher = new DeduplicatePublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+
+        $publisher->publish($definition, self::TEST_MESSAGE, self::TEST_OPTIONS);
 
         self::assertTrue(true);
     }
@@ -48,9 +42,14 @@ class DeduplicatePublisherTest extends TestCase
     public function testPublishInvalidOptions(array $options): void
     {
         $this->expectException(RabbitQueueException::class);
-        $definition = new ExampleDefinition();
 
-        $this->publisher->publish($definition, self::TEST_MESSAGE, $options);
+        $definition = $this->createDefinitionMock(self::TEST_QUEUE_NAME, self::TEST_QUEUE_NAME,  self::QUEUE_TYPE);
+        $hydratorRegistry = $this->createHydratorRegistryMock();
+        $client = $this->createMock(RabbitMqClient::class);
+
+        $publisher = new DeduplicatePublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+
+        $publisher->publish($definition, self::TEST_MESSAGE, $options);
     }
 
     public function invalidOptionsProvider(): array

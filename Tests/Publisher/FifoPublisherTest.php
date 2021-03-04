@@ -4,38 +4,32 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Tests\Publisher;
 
-use PHPUnit\Framework\TestCase;
+use PhpAmqpLib\Message\AMQPMessage;
 use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
-use Wakeapp\Bundle\RabbitQueueBundle\Definition\ExampleFifoDefinition;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
 use Wakeapp\Bundle\RabbitQueueBundle\Hydrator\JsonHydrator;
 use Wakeapp\Bundle\RabbitQueueBundle\Publisher\FifoPublisher;
-use Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry;
+use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
-class FifoPublisherTest extends TestCase
+class FifoPublisherTest extends AbstractTestCase
 {
     public const TEST_MESSAGE = '{"test": "test"}';
-
-    private FifoPublisher $publisher;
-
-    protected function setUp(): void
-    {
-        $client = $this->createMock(RabbitMqClient::class);
-        $hydratorRegistry = $this->createMock(HydratorRegistry::class);
-        $hydratorRegistry
-            ->method('getHydrator')
-            ->with(JsonHydrator::KEY)
-            ->willReturn(new JsonHydrator())
-        ;
-
-        $this->publisher = new FifoPublisher($client, $hydratorRegistry, JsonHydrator::KEY);
-
-        parent::setUp();
-    }
+    public const QUEUE_TYPE = QueueTypeEnum::FIFO;
 
     public function testPublish(): void
     {
-        $definition = new ExampleFifoDefinition();
-        $this->publisher->publish($definition, self::TEST_MESSAGE);
+        $definition = $this->createDefinitionMock(self::TEST_QUEUE_NAME, self::TEST_EXCHANGE, self::QUEUE_TYPE);
+        $hydratorRegistry = $this->createHydratorRegistryMock();
+
+        $client = $this->createMock(RabbitMqClient::class);
+        $client->expects(self::once())
+            ->method('publish')
+            ->with(self::isInstanceOf(AMQPMessage::class), '', self::TEST_QUEUE_NAME)
+        ;
+
+        $publisher = new FifoPublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+
+        $publisher->publish($definition, self::TEST_MESSAGE);
 
         self::assertTrue(true);
     }

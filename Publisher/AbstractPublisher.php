@@ -14,7 +14,7 @@ use Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry;
 abstract class AbstractPublisher implements PublisherInterface
 {
     public const QUEUE_TYPE = QueueTypeEnum::FIFO;
-    protected const DEFAULT_NAME = '';
+    private const DEFAULT_NAME = '';
 
     protected HydratorRegistry $hydratorRegistry;
     protected string $hydratorName;
