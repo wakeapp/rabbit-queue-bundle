@@ -7,6 +7,7 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\DependencyInjection;
 use Wakeapp\Bundle\RabbitQueueBundle\Consumer\ConsumerInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Hydrator\HydratorInterface;
+use Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface;
 use Exception;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
@@ -31,6 +32,7 @@ class WakeappRabbitQueueExtension extends Extension
 
         $container->setParameter('wakeapp_rabbit_queue.hydrator_name', $config['hydrator_name']);
         $this->setConnectionParams($container, $config['connections']);
+        $this->setConsumerParams($container, $config['consumer']);
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
@@ -48,6 +50,11 @@ class WakeappRabbitQueueExtension extends Extension
         $container
             ->registerForAutoconfiguration(HydratorInterface::class)
             ->addTag(HydratorInterface::TAG)
+        ;
+
+        $container
+            ->registerForAutoconfiguration(PublisherInterface::class)
+            ->addTag(PublisherInterface::TAG)
         ;
     }
 
@@ -69,5 +76,11 @@ class WakeappRabbitQueueExtension extends Extension
         $container->setParameter('wakeapp_rabbit_queue.connection.username', $connection['username']);
         $container->setParameter('wakeapp_rabbit_queue.connection.password', $connection['password']);
         $container->setParameter('wakeapp_rabbit_queue.connection.vhost', $connection['vhost']);
+    }
+
+    private function setConsumerParams(ContainerBuilder $container, array $consumerConfig): void
+    {
+        $container->setParameter('wakeapp_rabbit_queue.consumer.idle_timeout', $consumerConfig['idle_timeout']);
+        $container->setParameter('wakeapp_rabbit_queue.consumer.wait_timeout', $consumerConfig['wait_timeout']);
     }
 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Client;
 
+use PhpAmqpLib\Wire\AMQPTable;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\ExchangeEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueHeaderOptionEnum;
 use ErrorException;
 use Exception;
 use InvalidArgumentException;
@@ -37,9 +40,9 @@ class RabbitMqClient
      * @throws AMQPTimeoutException
      * @throws ErrorException
      */
-    public function wait()
+    public function wait(int $timeout = 0)
     {
-        return $this->channel->wait();
+        return $this->channel->wait(null, false, $timeout);
     }
 
     /**
@@ -77,15 +80,26 @@ class RabbitMqClient
     /**
      * @param string $queueName
      * @param AMQPMessage[] $messageList
+     * @param int $delay
      */
     public function rewindList(
         string $queueName,
-        array $messageList
+        array $messageList,
+        int $delay = 0
     ): void {
         $this->ackList($messageList);
 
         foreach ($messageList as $message) {
-            $this->channel->batch_basic_publish($message, '', $queueName);
+            $headers = $message->has('application_headers') ? $message->get('application_headers') : new AMQPTable();
+
+            $retryCount = $headers->getNativeData()[QueueHeaderOptionEnum::X_RETRY] ?? 0;
+
+            $headers->set(QueueHeaderOptionEnum::X_DELAY, $delay * 1000);
+            $headers->set(QueueHeaderOptionEnum::X_RETRY, ++$retryCount);
+
+            $message->set('application_headers', $headers);
+
+            $this->channel->batch_basic_publish($message, ExchangeEnum::RETRY_EXCHANGE, $queueName);
         }
 
         $this->channel->publish_batch();
@@ -108,7 +122,6 @@ class RabbitMqClient
 
     /**
      * @param AMQPMessage[] $messageList
-     * @param bool $multiple
      * @param bool $requeue
      */
     public function nackList(array $messageList, bool $requeue = true): void
@@ -146,5 +159,24 @@ class RabbitMqClient
     {
         $this->channel->close();
         $this->connection->close();
+    }
+
+    /**
+     * @param AMQPMessage[] $messageList
+     * @param string|null $exchangeName
+     * @param string|null $queueName
+     */
+    public function publishBatch(array $messageList, string $exchangeName = null, string $queueName = null): void
+    {
+        foreach ($messageList as $message) {
+            $this->channel->batch_basic_publish($message, $exchangeName, $queueName);
+        }
+
+        $this->channel->publish_batch();
+    }
+
+    public function publish(AMQPMessage $message, string $exchangeName = null, string $queueName = null): void
+    {
+        $this->channel->basic_publish($message, $exchangeName, $queueName);
     }
 }

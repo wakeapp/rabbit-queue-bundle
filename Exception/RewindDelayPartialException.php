@@ -8,19 +8,21 @@ use RuntimeException;
 
 use function is_int;
 
-class RewindPartialException extends RuntimeException
+class RewindDelayPartialException extends RuntimeException
 {
     /**
      * @var int[]
      */
     private array $rewindDeliveryTagList;
+    private int $delay;
 
     /**
      * @param int[] $rewindDeliveryTagList
+     * @param int $delay
      *
      * @throws RabbitQueueException
      */
-    public function __construct(array $rewindDeliveryTagList)
+    public function __construct(array $rewindDeliveryTagList, int $delay)
     {
         foreach ($rewindDeliveryTagList as $deliveryTag) {
             if (!is_int($deliveryTag)) {
@@ -29,8 +31,9 @@ class RewindPartialException extends RuntimeException
         }
 
         $this->rewindDeliveryTagList = $rewindDeliveryTagList;
+        $this->delay = $delay;
 
-        parent::__construct('Consumer rewind partial message list');
+        parent::__construct('Consumer rewind delay partial messageList');
     }
 
     /**
@@ -39,5 +42,10 @@ class RewindPartialException extends RuntimeException
     public function getRewindDeliveryTagList(): array
     {
         return $this->rewindDeliveryTagList;
+    }
+
+    public function getDelay(): int
+    {
+        return $this->delay;
     }
 }

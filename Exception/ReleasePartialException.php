@@ -4,42 +4,40 @@ declare(strict_types=1);
 
 namespace Wakeapp\Bundle\RabbitQueueBundle\Exception;
 
-use PhpAmqpLib\Message\AMQPMessage;
 use RuntimeException;
 
-use function sprintf;
+use function is_int;
 
 class ReleasePartialException extends RuntimeException
 {
     /**
-     * @var AMQPMessage[]
+     * @var int[]
      */
-    private array $releaseMessageList;
+    private array $releaseDeliveryTagList;
 
     /**
-     * @param string $name
-     * @param AMQPMessage[] $releaseMessageList
+     * @param int[] $releaseDeliveryTagList
      *
      * @throws RabbitQueueException
      */
-    public function __construct(string $name, array $releaseMessageList)
+    public function __construct(array $releaseDeliveryTagList)
     {
-        foreach ($releaseMessageList as $releaseMessage) {
-            if (!$releaseMessage instanceof AMQPMessage) {
-                throw new RabbitQueueException(sprintf('Release message must be instance of %s', AMQPMessage::class));
+        foreach ($releaseDeliveryTagList as $deliveryTag) {
+            if (!is_int($deliveryTag)) {
+                throw new RabbitQueueException('Delivery tag must be integer');
             }
         }
 
-        $this->releaseMessageList = $releaseMessageList;
+        $this->releaseDeliveryTagList = $releaseDeliveryTagList;
 
-        parent::__construct(sprintf('Consumer "%s" release partial messageList', $name));
+        parent::__construct('Consumer release partial message list');
     }
 
     /**
-     * @return AMQPMessage[]
+     * @return int[]
      */
-    public function getReleaseMessageList(): array
+    public function getReleaseDeliveryTagList(): array
     {
-        return $this->releaseMessageList;
+        return $this->releaseDeliveryTagList;
     }
 }

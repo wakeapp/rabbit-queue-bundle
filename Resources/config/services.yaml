@@ -11,6 +11,10 @@ services:
         arguments:
             - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Consumer\ConsumerInterface::TAG, default_index_method: 'getName' }
 
+    Wakeapp\Bundle\RabbitQueueBundle\Registry\PublisherRegistry:
+        arguments:
+            - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
     Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry:
         arguments:
             - !tagged_locator { tag: !php/const Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface::TAG, default_index_method: 'getQueueName' }
@@ -27,11 +31,37 @@ services:
         tags:
             - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Hydrator\HydratorInterface::TAG, default_index_method: 'getKey' }
 
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher:
+        arguments:
+            - '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient'
+            - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry'
+            - '%wakeapp_rabbit_queue.hydrator_name%'
+
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\FifoPublisher:
+        parent: 'Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher'
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\DelayPublisher:
+        parent: 'Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher'
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\DeduplicateDelayPublisher:
+        parent: 'Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher'
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\DeduplicatePublisher:
+        parent: 'Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher'
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
     Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer:
         arguments:
-            - '@PhpAmqpLib\Connection\AMQPStreamConnection'
             - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry'
             - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\HydratorRegistry'
+            - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\PublisherRegistry'
             - '%wakeapp_rabbit_queue.hydrator_name%'
 
     Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducerInterface: '@Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer'
@@ -43,7 +73,7 @@ services:
 
     Wakeapp\Bundle\RabbitQueueBundle\Command\ConsumerRunCommand:
         calls:
-            - ['dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry', '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient', '@?logger' ]]
+            - ['dependencyInjection', [ '@Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry', '@Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient', '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry', '@Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface','@?logger' ]]
         tags: [ 'console.command' ]
 
     Wakeapp\Bundle\RabbitQueueBundle\Command\UpdateDefinitionCommand:
