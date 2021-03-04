@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+## [1.0.0] - 2021-03-04
 ### Added
 - Added retry exchange for rewind message in queue with delay.
 - Added config parameters `idle_timeout` and `wait_timeout`.
