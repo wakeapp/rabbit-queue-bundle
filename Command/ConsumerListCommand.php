@@ -54,7 +54,7 @@ class ConsumerListCommand extends Command
         if ($consumerCount === 0) {
             $output->writeln('<comment>You have not yet any registered consumer</comment>');
 
-            return self::SUCCESS;
+            return 0;
         }
 
         $consoleStyle = new SymfonyStyle($input, $output);
@@ -71,6 +71,6 @@ class ConsumerListCommand extends Command
 
         $table->render();
 
-        return self::SUCCESS;
+        return 0;
     }
 }
