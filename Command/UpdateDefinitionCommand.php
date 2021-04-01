@@ -63,7 +63,7 @@ class UpdateDefinitionCommand extends Command
             $this->bindRetryExchange($definition);
         }
 
-        return self::SUCCESS;
+        return 0;
     }
 
     private function bindRetryExchange(DefinitionInterface $definition): void

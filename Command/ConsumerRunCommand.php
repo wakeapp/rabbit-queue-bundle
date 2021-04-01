@@ -140,7 +140,7 @@ class ConsumerRunCommand extends Command
             }
         }
 
-        return self::SUCCESS;
+        return 0;
     }
 
     protected function batchConsume(ConsumerInterface $consumer, array &$messageList): void
