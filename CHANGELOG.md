@@ -1,4 +1,10 @@
 ## [Unreleased]
+### Changed
+- Changed return value usage from using Command::SUCCESS constant to scalar. 
+- Commands changed: 
+  * UpdateDefinitionCommand
+  * ConsumerListCommand
+  * ConsumerRunCommand
 
 ## [1.0.0] - 2021-03-04
 ### Added
