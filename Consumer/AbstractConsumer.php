@@ -10,6 +10,9 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 abstract class AbstractConsumer implements ConsumerInterface
 {
+    public const DEFAULT_BATCH_SIZE = 1;
+    public const DEFAULT_MAX_PROCESSED_TASKS_COUNT = 1000;
+
     private HydratorRegistry $hydratorRegistry;
 
     public function __construct(HydratorRegistry $hydratorRegistry)
