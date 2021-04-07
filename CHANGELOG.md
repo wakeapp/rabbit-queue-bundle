@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Changed
+- [BC BREAK] Constants moved from `ConsumerInterface` to `AbstractConsumer`.
 
 ## [1.0.1] - 2021-04-01
 ### Changed

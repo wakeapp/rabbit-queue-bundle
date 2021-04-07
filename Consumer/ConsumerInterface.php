@@ -9,8 +9,6 @@ use PhpAmqpLib\Message\AMQPMessage;
 interface ConsumerInterface
 {
     public const TAG = 'wakeapp_rabbit_queue.consumer';
-    public const DEFAULT_BATCH_SIZE = 1;
-    public const DEFAULT_MAX_PROCESSED_TASKS_COUNT = 1000;
 
     public function getBatchSize(): int;
 
