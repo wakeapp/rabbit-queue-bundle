@@ -1,14 +1,20 @@
 services:
     PhpAmqpLib\Connection\AMQPStreamConnection:
         arguments:
-            - $host: '%wakeapp_rabbit_queue.connection.host%'
-            - $port: '%wakeapp_rabbit_queue.connection.port%'
-            - $user: '%wakeapp_rabbit_queue.connection.username%'
-            - $password: '%wakeapp_rabbit_queue.connection.password%'
-            - $vhost: '%wakeapp_rabbit_queue.connection.vhost%'
-            - $connection_timeout: '%wakeapp_rabbit_queue.connection.connection_timeout%'
-            - $read_write_timeout: '%wakeapp_rabbit_queue.connection.read_write_timeout%'
-            - $heartbeat: '%wakeapp_rabbit_queue.connection.heartbeat%'
+            - '%wakeapp_rabbit_queue.connection.host%'
+            - '%wakeapp_rabbit_queue.connection.port%'
+            - '%wakeapp_rabbit_queue.connection.username%'
+            - '%wakeapp_rabbit_queue.connection.password%'
+            - '%wakeapp_rabbit_queue.connection.vhost%'
+            - false
+            - 'AMQPLAIN'
+            - ~
+            - 'en_US'
+            - '%wakeapp_rabbit_queue.connection.connection_timeout%'
+            - '%wakeapp_rabbit_queue.connection.read_write_timeout%'
+            - ~
+            - false
+            - '%wakeapp_rabbit_queue.connection.heartbeat%'
 
     Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry:
         arguments:
