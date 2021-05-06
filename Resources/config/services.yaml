@@ -6,6 +6,15 @@ services:
             - '%wakeapp_rabbit_queue.connection.username%'
             - '%wakeapp_rabbit_queue.connection.password%'
             - '%wakeapp_rabbit_queue.connection.vhost%'
+            - false
+            - 'AMQPLAIN'
+            - ~
+            - 'en_US'
+            - '%wakeapp_rabbit_queue.connection.connection_timeout%'
+            - '%wakeapp_rabbit_queue.connection.read_write_timeout%'
+            - ~
+            - false
+            - '%wakeapp_rabbit_queue.connection.heartbeat%'
 
     Wakeapp\Bundle\RabbitQueueBundle\Registry\ConsumerRegistry:
         arguments:

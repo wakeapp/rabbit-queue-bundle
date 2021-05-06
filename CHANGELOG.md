@@ -1,4 +1,9 @@
 ## [Unreleased]
+### Added
+- Added new configuration parameters: connection_timeout, read_write_timeout, heartbeat.
+
+### Changed
+- Change exception logging in ConsumerRunCommand.
 
 ## [2.0.0] - 2021-04-07
 ### Changed

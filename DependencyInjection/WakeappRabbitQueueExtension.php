@@ -76,6 +76,9 @@ class WakeappRabbitQueueExtension extends Extension
         $container->setParameter('wakeapp_rabbit_queue.connection.username', $connection['username']);
         $container->setParameter('wakeapp_rabbit_queue.connection.password', $connection['password']);
         $container->setParameter('wakeapp_rabbit_queue.connection.vhost', $connection['vhost']);
+        $container->setParameter('wakeapp_rabbit_queue.connection.connection_timeout', $connection['connection_timeout']);
+        $container->setParameter('wakeapp_rabbit_queue.connection.read_write_timeout', $connection['read_write_timeout']);
+        $container->setParameter('wakeapp_rabbit_queue.connection.heartbeat', $connection['heartbeat']);
     }
 
     private function setConsumerParams(ContainerBuilder $container, array $consumerConfig): void

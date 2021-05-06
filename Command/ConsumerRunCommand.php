@@ -184,11 +184,11 @@ class ConsumerRunCommand extends Command
             $this->client->nackList($releaseMessageList);
             $this->client->ackList($ackMessageList);
         } catch (Exception $exception) {
-            $this->client->nackList($messageList);
-
-            $this->logger->warning('Error process queue: {errorMessage}', [
-                'errorMessage' => $exception->getMessage(),
+            $this->logger->warning('Error process queue: {exception}', [
+                'exception' => $exception,
             ]);
+
+            $this->client->nackList($messageList);
 
             throw $exception;
         } finally {
