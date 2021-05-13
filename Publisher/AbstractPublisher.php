@@ -29,10 +29,10 @@ abstract class AbstractPublisher implements PublisherInterface
 
     abstract protected function prepareOptions(DefinitionInterface $definition, array $options): array;
 
-    public function publish(DefinitionInterface $definition, string $dataString, array $options = []): void
+    public function publish(DefinitionInterface $definition, string $dataString, array $options = [], string $routingKey = ''): void
     {
         $exchangeName = $this->getDefinitionExchangeName($definition);
-        $queueName = $this->getDefinitionQueueName($definition);
+        $route = $routingKey !== '' ? $routingKey : $this->getDefinitionQueueName($definition);
 
         $message = new AMQPMessage($dataString, [
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
@@ -45,32 +45,24 @@ abstract class AbstractPublisher implements PublisherInterface
             $message->set('application_headers', new AMQPTable($amqpTableOptions));
         }
 
-        $this->client->publish($message, $exchangeName, $queueName);
+        $this->client->publish($message, $exchangeName, $route);
     }
 
     abstract public static function getQueueType(): string;
 
     protected function getDefinitionExchangeName(DefinitionInterface $definition): string
     {
-        if ($definition->getQueueType() === (QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE)) {
-            return self::DEFAULT_NAME;
-        }
-
-        return $definition->getQueueType() === QueueTypeEnum::FIFO
-            ? self::DEFAULT_NAME
-            : $definition->getEntryPointName()
+        return $definition->getQueueType() & (QueueTypeEnum::ROUTER | QueueTypeEnum::DELAY)
+            ? $definition->getEntryPointName()
+            : self::DEFAULT_NAME
         ;
     }
 
     protected function getDefinitionQueueName(DefinitionInterface $definition): string
     {
-        if ($definition->getQueueType() === (QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE)) {
-            return $definition::getQueueName();
-        }
-
-        return $definition->getQueueType() === QueueTypeEnum::FIFO
-            ? $definition::getQueueName()
-            : self::DEFAULT_NAME
+        return $definition->getQueueType() & QueueTypeEnum::DELAY
+            ? self::DEFAULT_NAME
+            : $definition::getQueueName()
         ;
     }
 }

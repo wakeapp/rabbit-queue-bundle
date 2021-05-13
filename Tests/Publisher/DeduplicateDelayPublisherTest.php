@@ -35,6 +35,24 @@ class DeduplicateDelayPublisherTest extends AbstractTestCase
         self::assertTrue(true);
     }
 
+    public function testPublishWithRouting(): void
+    {
+        $definition = $this->createDefinitionMock(self::TEST_QUEUE_NAME, self::TEST_EXCHANGE, self::QUEUE_TYPE);
+        $hydratorRegistry = $this->createHydratorRegistryMock();
+
+        $client = $this->createMock(RabbitMqClient::class);
+        $client->expects(self::once())
+            ->method('publish')
+            ->with(self::isInstanceOf(AMQPMessage::class), self::TEST_EXCHANGE, '')
+        ;
+
+        $publisher = new DeduplicateDelayPublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+
+        $publisher->publish($definition, self::TEST_MESSAGE, self::TEST_OPTIONS);
+
+        self::assertTrue(true);
+    }
+
     /**
      * @dataProvider invalidOptionsProvider
      */

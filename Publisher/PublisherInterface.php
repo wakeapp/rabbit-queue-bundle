@@ -8,7 +8,7 @@ interface PublisherInterface
 {
     public const TAG = 'wakeapp_rabbit_queue.publisher';
 
-    public function publish(DefinitionInterface $definition, string $dataString, array $options = []): void;
+    public function publish(DefinitionInterface $definition, string $dataString, array $options = [], string $routingKey = ''): void;
 
     public static function getQueueType(): string;
 }

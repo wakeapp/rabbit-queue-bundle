@@ -7,15 +7,14 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Tests\Publisher;
 use PhpAmqpLib\Message\AMQPMessage;
 use Wakeapp\Bundle\RabbitQueueBundle\Client\RabbitMqClient;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
-use Wakeapp\Bundle\RabbitQueueBundle\Exception\RabbitQueueException;
 use Wakeapp\Bundle\RabbitQueueBundle\Hydrator\JsonHydrator;
-use Wakeapp\Bundle\RabbitQueueBundle\Publisher\DeduplicatePublisher;
+use Wakeapp\Bundle\RabbitQueueBundle\Publisher\FifoPublisher;
+use Wakeapp\Bundle\RabbitQueueBundle\Publisher\RouterPublisher;
 use Wakeapp\Bundle\RabbitQueueBundle\Tests\TestCase\AbstractTestCase;
 
-class DeduplicatePublisherTest extends AbstractTestCase
+class RouterPublisherTest extends AbstractTestCase
 {
-    public const TEST_OPTIONS = ['key' => 'test'];
-    public const QUEUE_TYPE = QueueTypeEnum::FIFO | QueueTypeEnum::DEDUPLICATE;
+    public const QUEUE_TYPE = QueueTypeEnum::ROUTER;
 
     public function testPublish(): void
     {
@@ -25,12 +24,12 @@ class DeduplicatePublisherTest extends AbstractTestCase
         $client = $this->createMock(RabbitMqClient::class);
         $client->expects(self::once())
             ->method('publish')
-            ->with(self::isInstanceOf(AMQPMessage::class), '', self::TEST_QUEUE_NAME)
+            ->with(self::isInstanceOf(AMQPMessage::class), self::TEST_EXCHANGE, self::TEST_QUEUE_NAME)
         ;
 
-        $publisher = new DeduplicatePublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+        $publisher = new RouterPublisher($client, $hydratorRegistry, JsonHydrator::KEY);
 
-        $publisher->publish($definition, self::TEST_MESSAGE, self::TEST_OPTIONS);
+        $publisher->publish($definition, self::TEST_MESSAGE);
 
         self::assertTrue(true);
     }
@@ -43,12 +42,12 @@ class DeduplicatePublisherTest extends AbstractTestCase
         $client = $this->createMock(RabbitMqClient::class);
         $client->expects(self::once())
             ->method('publish')
-            ->with(self::isInstanceOf(AMQPMessage::class), '', self::TEST_ROUTING)
+            ->with(self::isInstanceOf(AMQPMessage::class), self::TEST_EXCHANGE, self::TEST_ROUTING)
         ;
 
-        $publisher = new DeduplicatePublisher($client, $hydratorRegistry, JsonHydrator::KEY);
+        $publisher = new RouterPublisher($client, $hydratorRegistry, JsonHydrator::KEY);
 
-        $publisher->publish($definition, self::TEST_MESSAGE, self::TEST_OPTIONS, self::TEST_ROUTING);
+        $publisher->publish($definition, self::TEST_MESSAGE, [], self::TEST_ROUTING);
 
         self::assertTrue(true);
     }
