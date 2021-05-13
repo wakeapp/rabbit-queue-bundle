@@ -118,11 +118,14 @@ $producer->put('queue_name', $data, $options);
 
 Соответственно на каждый новый тип очереди требуется свой класс `Publisher` с кастомной логикой обработки/валидации и публикации сообщений в канал. 
 
-Бандл поддерживает следующие типы очередей:
+Бандл поддерживает следующие типы очередей и обменников:
  - FIFO
  - Delay
  - Deduplicate
  - Deduplicate + Delay
+ - Router
+
+Router используется для создания разветвленной топологии как описано [тут](https://www.rabbitmq.com/tutorials/tutorial-four-php.html) и [тут](https://www.rabbitmq.com/tutorials/tutorial-five-php.html)
 
 При желании добавить собственный тип очереди, необходимо создать класс `Publisher` наследующий [AbstractPublisher](Publisher/AbstractPublisher.php) или реализующий [PublisherInterface](Publisher/PublisherInterface.php).
 

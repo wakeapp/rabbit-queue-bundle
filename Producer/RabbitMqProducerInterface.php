@@ -6,5 +6,5 @@ namespace Wakeapp\Bundle\RabbitQueueBundle\Producer;
 
 interface RabbitMqProducerInterface
 {
-    public function put(string $queueName, $data, array $options = []);
+    public function put(string $queueName, $data, array $options = [], string $routingKey = '');
 }

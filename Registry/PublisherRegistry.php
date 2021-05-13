@@ -24,8 +24,8 @@ class PublisherRegistry
      */
     public function getPublisher(int $queueType): AbstractPublisher
     {
-        if ($this->publisherRegistry->has($queueType)) {
-            return $this->publisherRegistry->get($queueType);
+        if ($this->publisherRegistry->has((string) $queueType)) {
+            return $this->publisherRegistry->get((string) $queueType);
         }
 
         throw new PublisherNotFoundException(sprintf('Publisher for queue type "%s" not found', $queueType));

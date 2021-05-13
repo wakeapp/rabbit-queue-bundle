@@ -10,4 +10,5 @@ class QueueTypeEnum
     public const DELAY = 2;
     public const REPLACE = 4;
     public const DEDUPLICATE = 8;
+    public const ROUTER = 16;
 }
