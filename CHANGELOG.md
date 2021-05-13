@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Added
+- `RouterPublisher` added for using `direct` and `topic` RabbitMQ exchanges with routing key.
 
 ## [2.1.0] - 2021-05-06
 ### Added

@@ -25,7 +25,8 @@ Rabbit Queue Bundle
     - [Шаг 2: Создание consumer'а](#шаг-2-создание-consumerа)
     - [Шаг 3: Загрузка схем очередей RabbitMQ](#шаг-3-загрузка-схем-очередей-rabbitmq)
     - [Шаг 4: Запуск consumer'а](#шаг-4-запуск-consumerа)
-7. [Лицензия](#лицензия)
+7. [Использование `RouterPublisher`](#использование-routerpublisher)
+8. [Лицензия](#лицензия)
 
 Требования
 ---------
@@ -497,6 +498,157 @@ php bin/console rabbit:consumer:run example
 ```
 
 Для просмотра списка всех зарегистрированных `consumer`'ов достаточно выполнить команду `rabbit:consumer:list`.
+
+Использование `RouterPublisher`
+--------
+
+`RouterPublisher` следует использовать в случаях, когда нужно множество очередей, а каждое сообщение должно попадать 
+в сразу в некоторое подмножество, определяемое по `routingKey` сообщения. Для таких целей нужно создать `Definition`,
+в котором будет определена только `exchange` типа `direct` или `topic`. Эта `Definition` будет использоваться в качестве
+точки входя для сообщений. После этого нужно создать по одной `Definition` на каждую очередь, и все их биндить на первую
+`Definition`.
+
+### Пример `Definition` с `exchange`:
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Wakeapp\Bundle\RabbitQueueBundle\Definition;
+
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+
+class ExampleTopicExchangeDefinition implements DefinitionInterface
+{
+    public const QUEUE_NAME = QueueEnum::EXAMPLE_TOPIC_EXCHENGE;
+    public const ENTRY_POINT = self::QUEUE_NAME;
+
+    /**
+     * {@inheritDoc}
+     */
+    public function init(AMQPStreamConnection $connection): void
+    {
+        $channel = $connection->channel();
+
+        $channel->exchange_declare(
+            self::QUEUE_NAME,
+            'topic',
+            false,
+            true,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getEntryPointName(): string
+    {
+        return self::ENTRY_POINT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getQueueType(): int
+    {
+        return QueueTypeEnum::ROUTER;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getQueueName(): string
+    {
+        return self::QUEUE_NAME;
+    }
+}
+```
+
+### Пример `Definition` для очереди
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Wakeapp\Bundle\RabbitQueueBundle\Definition;
+
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+
+class ExampleRoutedQueryDefinition implements DefinitionInterface
+{
+    public const QUEUE_NAME = QueueEnum::EXAMPLE_ROUTED_FIFO;
+    public const ENTRY_POINT = QueueEnum::EXAMPLE_TOPIC_EXCHENGE; // это QUEUE_NAME из примера выше
+    public const ROUTING = [
+        '*.orange.*',
+        'big.#',
+        '*.black.car'
+    ];
+
+    /**
+     * {@inheritDoc}
+     */
+    public function init(AMQPStreamConnection $connection): void
+    {
+        $channel = $connection->channel();
+
+        $channel->queue_declare(
+            self::QUEUE_NAME,
+            false,
+            true,
+            false,
+            false
+        );
+        
+        foreach (self::ROUTING as $route) {
+            $channel->queue_bind(self::QUEUE_NAME, self::ENTRY_POINT, $route); // биндим на exchange из первой Definition
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getEntryPointName(): string
+    {
+        return self::ENTRY_POINT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getQueueType(): int
+    {
+        return QueueTypeEnum::FIFO;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getQueueName(): string
+    {
+        return self::QUEUE_NAME;
+    }
+}
+```
+
+После определения биржи и очередей отправка сообщений будет выглядеть как и раньше, но сообщения будут попадать в
+очереди только при подходящем routingKey (четвертый параметр в методе put()).
+
+```php
+<?php
+$data = ['message' => 'example']; # Сообщение
+$options = [];
+
+/** @var \Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer $producer */
+$producer->put('queue_name', $data, $options, 'small.orange.bicycle'); // попадет в очередь по роуту '*.orange.*'
+$producer->put('queue_name', $data, $options, 'big.aaa.bbb.and.more.words'); // попадет в очередь по роуту 'big.#'
+$producer->put('queue_name', $data, $options, 'small.black.bicycle'); // НЕ попадет в очередь из примера
+```
+
+**Важно!!! Длиина routeKey не должна превышать 255 символов**
 
 Лицензия
 --------
