@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\ExchangeEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
 
 class UpdateDefinitionCommand extends Command
 {
@@ -68,11 +69,16 @@ class UpdateDefinitionCommand extends Command
 
     private function bindRetryExchange(DefinitionInterface $definition): void
     {
+        if ($definition->getQueueType() & QueueTypeEnum::ROUTER > 0) {
+            return;
+        }
+
         $queueName = $definition::getQueueName();
         $channel = $this->connection->channel();
+        $retryExchange = $queueName . ExchangeEnum::RETRY_EXCHANGE;
 
         $channel->exchange_declare(
-            ExchangeEnum::RETRY_EXCHANGE,
+            $retryExchange,
             'x-delayed-message',
             false,
             true,
@@ -82,6 +88,6 @@ class UpdateDefinitionCommand extends Command
             new AMQPTable(['x-delayed-type' => AMQPExchangeType::DIRECT])
         );
 
-        $channel->queue_bind($queueName, ExchangeEnum::RETRY_EXCHANGE, $queueName);
+        $channel->queue_bind($queueName, $retryExchange, $queueName);
     }
 }
