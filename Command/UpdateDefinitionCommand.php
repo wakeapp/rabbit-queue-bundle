@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Definition\DefinitionInterface;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\ExchangeEnum;
 use Wakeapp\Bundle\RabbitQueueBundle\Enum\QueueTypeEnum;
+use Wakeapp\Bundle\RabbitQueueBundle\Exception\RouteStructureException;
 
 class UpdateDefinitionCommand extends Command
 {
@@ -55,10 +56,48 @@ class UpdateDefinitionCommand extends Command
 
     /**
      * {@inheritDoc}
+     *
+     * @throws RouteStructureException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $routersToInit = [];
+        $initializedRouters = [];
+
         foreach ($this->definitionList as $definition) {
+            if ($definition->getQueueType() & QueueTypeEnum::ROUTER > 0) {
+                if (method_exists($definition, 'dependsOn') && !empty($definition->dependsOn())) {
+                    $routersToInit[$definition::getQueueName()] = $definition;
+                } else {
+                    $definition->init($this->connection);
+                    $initializedRouters[] = $definition::getQueueName();
+                }
+            }
+        }
+
+        $successLoop = true;
+        while ($successLoop && !empty($routersToInit)) {
+            $successLoop = false;
+
+            foreach ($routersToInit as $router) {
+                if (empty(array_diff($router->dependsOn(), $initializedRouters))) {
+                    $successLoop = true;
+                    $router->init($this->connection);
+                    $initializedRouters[] = $router::getQueueName();
+                }
+            }
+        }
+
+        if (!$successLoop) {
+            throw new RouteStructureException('Router definitions have cyclic dependencies');
+        }
+
+
+        foreach ($this->definitionList as $definition) {
+            if ($definition->getQueueType() & QueueTypeEnum::ROUTER === 0) {
+                continue;
+            }
+
             $definition->init($this->connection);
 
             $this->bindRetryExchange($definition);
@@ -69,10 +108,6 @@ class UpdateDefinitionCommand extends Command
 
     private function bindRetryExchange(DefinitionInterface $definition): void
     {
-        if ($definition->getQueueType() & QueueTypeEnum::ROUTER > 0) {
-            return;
-        }
-
         $queueName = $definition::getQueueName();
         $channel = $this->connection->channel();
         $retryExchange = $queueName . ExchangeEnum::RETRY_EXCHANGE;

@@ -66,6 +66,11 @@ services:
         tags:
             - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
 
+    Wakeapp\Bundle\RabbitQueueBundle\Publisher\RouterPublisher:
+        parent: 'Wakeapp\Bundle\RabbitQueueBundle\Publisher\AbstractPublisher'
+        tags:
+            - { name: !php/const Wakeapp\Bundle\RabbitQueueBundle\Publisher\PublisherInterface::TAG, default_index_method: 'getQueueType' }
+
     Wakeapp\Bundle\RabbitQueueBundle\Producer\RabbitMqProducer:
         arguments:
             - '@Wakeapp\Bundle\RabbitQueueBundle\Registry\DefinitionRegistry'
