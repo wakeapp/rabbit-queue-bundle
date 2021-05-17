@@ -65,7 +65,7 @@ class UpdateDefinitionCommand extends Command
         $initializedRouters = [];
 
         foreach ($this->definitionList as $definition) {
-            if ($definition->getQueueType() & QueueTypeEnum::ROUTER > 0) {
+            if ($definition->getQueueType() & QueueTypeEnum::ROUTER) {
                 if (method_exists($definition, 'dependsOn') && !empty($definition->dependsOn())) {
                     $routersToInit[$definition::getQueueName()] = $definition;
                 } else {
@@ -83,6 +83,7 @@ class UpdateDefinitionCommand extends Command
                 if (empty(array_diff($router->dependsOn(), $initializedRouters))) {
                     $successLoop = true;
                     $router->init($this->connection);
+                    unset($routersToInit[$router::getQueueName()]);
                     $initializedRouters[] = $router::getQueueName();
                 }
             }
@@ -94,7 +95,7 @@ class UpdateDefinitionCommand extends Command
 
 
         foreach ($this->definitionList as $definition) {
-            if ($definition->getQueueType() & QueueTypeEnum::ROUTER === 0) {
+            if ($definition->getQueueType() & QueueTypeEnum::ROUTER) {
                 continue;
             }
 
