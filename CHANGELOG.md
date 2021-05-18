@@ -1,4 +1,5 @@
 ## [Unreleased]
+- Added support `psr/container` with version `>=1.1.0`.
 
 ## [2.1.0] - 2021-05-06
 ### Added
