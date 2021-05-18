@@ -111,10 +111,9 @@ class UpdateDefinitionCommand extends Command
     {
         $queueName = $definition::getQueueName();
         $channel = $this->connection->channel();
-        $retryExchange = $queueName . ExchangeEnum::RETRY_EXCHANGE;
 
         $channel->exchange_declare(
-            $retryExchange,
+            ExchangeEnum::RETRY_EXCHANGE,
             'x-delayed-message',
             false,
             true,
@@ -124,6 +123,6 @@ class UpdateDefinitionCommand extends Command
             new AMQPTable(['x-delayed-type' => AMQPExchangeType::DIRECT])
         );
 
-        $channel->queue_bind($queueName, $retryExchange, $queueName);
+        $channel->queue_bind($queueName, ExchangeEnum::RETRY_EXCHANGE, $queueName);
     }
 }
